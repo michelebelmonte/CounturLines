@@ -1,0 +1,1 @@
+ val getTileIsoline: ~left:float -> ~top:float -> ~right:float -> ~bottom:float -> ~v0:float -> ~v1:float -> ~v2:float -> ~v3:float -> Point.t list
