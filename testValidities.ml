@@ -1,5 +1,5 @@
 
-type valueType = Smaller | GreaterOrEqual
+type valueType = X | O
 
 
 type point2d={
@@ -27,11 +27,11 @@ type 'a quad = {
 
 let getValidity quota currentValue =
   if (currentValue<quota) then
-    Smaller
+    X
   else
-    GreaterOrEqual
+    O
 
-let getValidityQuad valueQuad quota =
+let getValidityQuad quota valueQuad =
   let getValidity = getValidity quota in
   let topLeft=getValidity valueQuad.topLeft.z in
   let topRight=getValidity valueQuad.topRight.z in
@@ -39,9 +39,9 @@ let getValidityQuad valueQuad quota =
   let bottomRight=getValidity valueQuad.bottomRight.z in
   {topLeft;topRight;bottomLeft;bottomRight}
 
-let getIntersection z p0 p1 =
+let getIntersection quota p0 p1 =
   let zDistance = p1.z -. p0.z in
-  let zDelta = z -. p0.z in
+  let zDelta = quota -. p0.z in
   let zFactor = zDelta /. zDistance in
   if (p0.y = p1.y) then
     let xDelta=p1.x -. p0.x in
@@ -67,93 +67,95 @@ let getSegmentFromFourPoints quota valid0 valid1 invalid0 invalid1  =
 let getMarchingCubeFunction validityQuad =
   match validityQuad.topLeft, validityQuad.topRight, validityQuad.bottomLeft, validityQuad.bottomRight with
   (*no valid points*)
-  | Smaller,Smaller, Smaller,Smaller -> fun quad reference-> []
+  | X,X,
+    X,X -> fun quad reference-> []
 
-  | GreaterOrEqual, GreaterOrEqual, GreaterOrEqual, GreaterOrEqual -> fun quad refernce -> []
+  | O,O, 
+    O,O -> fun quad refernce -> []
 
   (*one valid point or one invalid point*)
-  | Smaller, GreaterOrEqual,
-    GreaterOrEqual,GreaterOrEqual
-  | GreaterOrEqual, Smaller,
-    Smaller, Smaller -> fun quad quota ->
+  | X,O,
+    O,O
+  | O,X,
+    X,X -> fun quota quad ->
 						 let getSegmentFromThreePoints = getSegmentFromThreePoints quota in
 						 let s0= getSegmentFromThreePoints quad.topLeft quad.bottomLeft quad.topRight in
 						 s0::[]
 						       
-  | GreaterOrEqual, Smaller,
-    GreaterOrEqual,GreaterOrEqual
-  | Smaller, GreaterOrEqual,
-    Smaller, Smaller -> fun quad quota ->
+  | O,X,
+    O,O
+  | X,O,
+    X,X -> fun quota quad ->
 						 let getSegmentFromThreePoints = getSegmentFromThreePoints quota in
 						 let s0= getSegmentFromThreePoints quad.topRight quad.topLeft quad.bottomRight in
 						 s0::[]
 
-  | GreaterOrEqual,GreaterOrEqual,
-    Smaller, GreaterOrEqual						       
-  | Smaller, Smaller,
-    GreaterOrEqual,  Smaller -> fun quad quota ->
+  | O,O,
+    X,O						       
+  | X,X,
+    O,X -> fun quota quad ->
 						 let getSegmentFromThreePoints = getSegmentFromThreePoints quota in
 						 let s0= getSegmentFromThreePoints quad.bottomLeft quad.topLeft quad.bottomRight in
 						 s0::[]
 
-  | GreaterOrEqual,GreaterOrEqual,
-    GreaterOrEqual,Smaller						       
-  | Smaller, Smaller,
-    Smaller,  GreaterOrEqual -> fun quad quota ->
+  | O,O,
+    O,X						       
+  | X,X,
+    X,O -> fun quota quad ->
 						 let getSegmentFromThreePoints = getSegmentFromThreePoints quota in
 						 let s0= getSegmentFromThreePoints quad.bottomRight quad.topRight quad.bottomLeft in
 						 s0::[]
 
   (*two valid adjacent points*)
-  | GreaterOrEqual,GreaterOrEqual,
-    Smaller, Smaller -> fun quad quota ->
+  | O,O,
+    X,X -> fun quota quad ->
 						       let getSegmentFromFourPoints = getSegmentFromFourPoints quota in
 						       let s0 = getSegmentFromFourPoints quad.topLeft quad.topRight quad.bottomLeft quad.bottomRight in
 						       s0::[]
-  | Smaller, GreaterOrEqual,
-    Smaller, GreaterOrEqual -> fun quad quota ->
+  | X,O,
+    X,O -> fun quota quad ->
 						       let getSegmentFromFourPoints = getSegmentFromFourPoints quota in
 						       let s0 = getSegmentFromFourPoints quad.topRight quad.bottomRight quad.topLeft quad.bottomRight in
 						       s0::[]
-  | Smaller, Smaller,
-    GreaterOrEqual, GreaterOrEqual -> fun quad quota ->
+  | X,X,
+    O,O -> fun quota quad ->
 						       let getSegmentFromFourPoints = getSegmentFromFourPoints quota in
 						       let s0 = getSegmentFromFourPoints quad.bottomLeft quad.bottomRight quad.topLeft quad.topRight in
 						       s0::[]
-  | GreaterOrEqual, Smaller,
-    GreaterOrEqual, Smaller -> fun quad quota ->
+  | O,X,
+    O,X -> fun quota quad->
 						       let getSegmentFromFourPoints = getSegmentFromFourPoints quota in
 						       let s0 = getSegmentFromFourPoints quad.topLeft quad.bottomLeft quad.topRight quad.bottomRight in
 						       s0::[]
 
-  (*aggiungere un test per vedere se due segmenti sono uguali*)
+  (*add a test to check if the segments are the same*)
   (*two opposite valid points*)
-  | GreaterOrEqual,Smaller,
-    Smaller, GreaterOrEqual -> fun quad quota ->
+  | O,X,
+    X,O -> fun quota quad ->
 						       let getSegmentFromThreePoints = getSegmentFromThreePoints quota in
 						       let s0= getSegmentFromThreePoints quad.topLeft quad.bottomLeft quad.topRight in
 						       let s1= getSegmentFromThreePoints quad.bottomRight quad.topRight quad.bottomLeft in
 						       s0::s1::[]
 							        
-  | Smaller, GreaterOrEqual,
-    GreaterOrEqual,Smaller -> fun quad quota ->
+  | X,O,
+    O,X -> fun quota quad ->
 						       let getSegmentFromThreePoints = getSegmentFromThreePoints quota in
 						       let s0= getSegmentFromThreePoints quad.topRight quad.topLeft quad.bottomRight in
 						       let s1= getSegmentFromThreePoints quad.bottomLeft quad.topLeft quad.bottomRight in
 						       s0::s1::[]
 
-let getIsoSegments quad quota =
-  let validityQuad = getValidityQuad quad quota in
+let getIsoSegments quota quad =
+  let validityQuad = getValidityQuad quota quad in
   let marchingSquareFunction=getMarchingCubeFunction validityQuad in
-  marchingSquareFunction quad quota
+  marchingSquareFunction quota quad
 
-let computeIsoSegments ~left ~top  ~right ~bottom ~leftTopValue ~rightTopValue ~leftBottomValue ~rightBottomValue ~quota =
+let computeIsoSegments ~quota ~left ~top  ~right ~bottom ~leftTopValue ~rightTopValue ~leftBottomValue ~rightBottomValue =
   let topLeft={x=left;y=top;z=leftTopValue} in
   let topRight={x=right;y=top;z=rightTopValue} in
   let bottomLeft={x=left;y=bottom;z=leftBottomValue} in
   let bottomRight={x=left;y=bottom;z=rightBottomValue} in
   let quad={topLeft;topRight;bottomLeft;bottomRight} in
-  getIsoSegments quad quota
+  getIsoSegments quota quad
 							     
 let () =
   let point={x=1.0;y=2.0;z=3.0} in
