@@ -64,6 +64,15 @@ let getSegmentFromFourPoints quota valid0 valid1 invalid0 invalid1  =
   let v1 = getIntersection valid1 invalid1 in
   {v0;v1}
   
+let getSegmentList s0 s1 =
+	if (s0.v0==s1.v0 && s0.v1==s1.v1) then
+		s0::[]
+	else
+		if (s0.v0==s1.v1 && s0.v1==s1.v0) then
+			s0::[]
+		else
+			s0::s1::[]
+			
 let computeMarchingSquare quota valueQuad validityQuad =
   match validityQuad.topLeft, validityQuad.topRight, validityQuad.bottomLeft, validityQuad.bottomRight with
   (*no valid points*)
@@ -133,16 +142,16 @@ let computeMarchingSquare quota valueQuad validityQuad =
   | O,X,
     X,O ->
 			let getSegmentFromThreePoints = getSegmentFromThreePoints quota in
-			let s0= getSegmentFromThreePoints valueQuad.topLeft valueQuad.bottomLeft valueQuad.topRight in
-			let s1= getSegmentFromThreePoints valueQuad.bottomRight valueQuad.topRight valueQuad.bottomLeft in
-			s0::s1::[]
+			let s0= getSegmentFromThreePoints valueQuad.topLeft valueQuad.topRight valueQuad.bottomLeft  in
+			let s1= getSegmentFromThreePoints valueQuad.bottomRight valueQuad.bottomLeft valueQuad.topRight in
+			getSegmentList s0 s1
 							        
   | X,O,
     O,X ->
 			let getSegmentFromThreePoints = getSegmentFromThreePoints quota in
 			let s0= getSegmentFromThreePoints valueQuad.topRight valueQuad.topLeft valueQuad.bottomRight in
-			let s1= getSegmentFromThreePoints valueQuad.bottomLeft valueQuad.topLeft valueQuad.bottomRight in
-			s0::s1::[]
+			let s1= getSegmentFromThreePoints valueQuad.bottomLeft valueQuad.bottomRight valueQuad.topLeft in
+			getSegmentList s0 s1
 
 let getIsoSegments quota valueQuad =
   let validityQuad = getValidityQuad quota valueQuad in
@@ -152,6 +161,6 @@ let computeIsoSegments ~quota ~left ~top  ~right ~bottom ~leftTopValue ~rightTop
   let topLeft={x=left;y=top;z=leftTopValue} in
   let topRight={x=right;y=top;z=rightTopValue} in
   let bottomLeft={x=left;y=bottom;z=leftBottomValue} in
-  let bottomRight={x=left;y=bottom;z=rightBottomValue} in
-  let quad={topLeft;topRight;bottomLeft;bottomRight} in
-  getIsoSegments quota quad
+  let bottomRight={x=right;y=bottom;z=rightBottomValue} in
+  let valueQuad={topLeft;topRight;bottomLeft;bottomRight} in
+  getIsoSegments quota valueQuad
